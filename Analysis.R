@@ -82,6 +82,8 @@ rownames(traits_cb) <- traits_cb$Gen_sp
 traits_cb <- traits_cb[,c(-1)]
 
 #fourth corner analysis----
+#this analysis is not used in the final paper as using mvabund is a better approach
+#However, you can see here results are consistent.
 
 ##wt
 four6b_wt <- fourthcorner(tabR = gis_wt ,tabL = spec_wt ,tabQ = traits_wt[,c(-2,-8,-9,-10,-11)],
@@ -238,10 +240,14 @@ plot(eff_bb3$pol_mean ~ eff_bb3$ITfam)
 abline(m)
 #plot(m)
 
-#Sup Mat: Alternative test of fourth corner analysis based in Brown et al and Wang et al papers.----
+#Alternative test of fourth corner analysis based in Brown et al and Wang et al papers.----
+#This is the approach finally used in ms.
 
 #Adapt to wt
 # now fit the fourth corner model, only as a function of a couple of traits and env variables:
+head(gis_wt)
+#select only variables for which we have strong predictions
+gis_wt <- gis_wt[,c(-3,-4,-7,-8)]
 ftSmall=traitglm(R = gis_wt, L = spec_wt, Q = traits_wt[,c(-2,-8,-9,-10,-11)])
 anova(ftSmall, nBoot = 10) #make nBoot=1000 for accutare results
 anova(ftSmall, p.uni="adjusted") #make nBoot=1000 for accutare results  #SLOW! 2 h 17 min. gives all p-values.
@@ -413,6 +419,10 @@ plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variab
                      ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
                      scales = list( x= list(rot = 45)))
 print(plot.4th)
+
+#can we test best model?
+ftSmall=traitglm(R = gis_wt, L = spec_wt, Q = traits_wt[,c(-2,-8,-9,-10,-11)])
+
 
 #BB
 spec_bb <- droplevels(spec_bb)
