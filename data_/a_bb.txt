@@ -1,0 +1,74 @@
+Analysis of Deviance Table
+
+Model: traitglm(L = spec_bb, R = gis_bb, Q = traits_bb[, c(-2, -4, -8, 
+Model:     -9, -10, -11)])
+
+Multivariate test:
+                              Res.Df Df.diff    Dev Pr(>Dev)  
+(Intercept)                      351                          
+V1                               351       0  0.000     1.00  
+sppAndrena_cressonii             350       1  4.482     0.63  
+sppAndrena_fenningeri            349       1  4.765     0.50  
+sppAndrena_morrisonella          348       1  2.350     0.58  
+sppAndrena_vicina                347       1  0.000     1.00  
+sppAugochlora_pura               346       1  2.526     0.58  
+sppAugochlorella_aurata          345       1  5.615     0.55  
+sppBombus_bimaculatus            344       1  0.080     0.64  
+sppBombus_griseocollis           343       1  0.158     0.75  
+sppBombus_impatiens              342       1  1.626     0.51  
+sppBombus_perplexus              341       1  0.201     0.64  
+sppColletes_inaequalis           340       1  0.294     0.48  
+sppColletes_thoracicus           339       1  3.956     0.64  
+sppColletes_validus              338       1  1.403     0.49  
+sppHabropoda_laboriosa           337       1  0.012     0.94  
+sppLasioglossum_leucocomum       336       1  6.037     0.53  
+sppLasioglossum_oblongum         335       1  4.910     0.64  
+sppLasioglossum_pilosum          334       1  7.974     0.59  
+sppLasioglossum_versatum         333       1  9.589     0.63  
+sppLasioglossum_weemsi           332       1  7.657     0.53  
+sppOsmia_pumila                  331       1 15.454     0.61  
+sppXylocopa_virginica            330       1  0.780     0.61  
+ag_300                           329       1 27.819     0.03 *
+open_300                         328       1  0.683     0.50  
+ag_1500                          327       1 11.092     0.05 *
+open_1500                        326       1  0.077     0.75  
+ag_300.squ                       325       1  6.269     0.11  
+open_300.squ                     324       1  0.024     0.92  
+ag_1500.squ                      323       1  6.412     0.08 .
+open_1500.squ                    322       1  4.882     0.13  
+ag_300.Nest_placehole            321       1  0.043     0.68  
+ag_300.Nest_placesoil            320       1  0.306     0.63  
+ag_300.Nest_placewood            319       1  0.053     0.83  
+ag_300.Socialityfac_social       318       1  4.874     0.02 *
+ag_300.SocialitySolitary         317       1  0.007     0.96  
+ag_300.ITfam                     316       1  0.012     0.97  
+ag_300.PDrar20                   315       1  0.891     0.55  
+ag_300.tongue                    314       1  5.383     0.09 .
+open_300.Nest_placehole          313       1  0.680     0.22  
+open_300.Nest_placesoil          312       1  0.134     0.69  
+open_300.Nest_placewood          311       1  0.035     0.86  
+open_300.Socialityfac_social     310       1  1.179     0.25  
+open_300.SocialitySolitary       309       1  0.408     0.50  
+open_300.ITfam                   308       1  0.605     0.59  
+open_300.PDrar20                 307       1  0.580     0.54  
+open_300.tongue                  306       1  3.683     0.17  
+ag_1500.Nest_placehole           305       1  3.822     0.07 .
+ag_1500.Nest_placesoil           304       1  8.383     0.02 *
+ag_1500.Nest_placewood           303       1  1.682     0.31  
+ag_1500.Socialityfac_social      302       1  0.407     0.11  
+ag_1500.SocialitySolitary        301       1 -0.022     1.00  
+ag_1500.ITfam                    300       1  9.805     0.04 *
+ag_1500.PDrar20                  299       1  7.624     0.06 .
+ag_1500.tongue                   298       1  0.422     0.55  
+open_1500.Nest_placehole         297       1  0.000     0.32  
+open_1500.Nest_placesoil         296       1  0.000     1.00  
+open_1500.Nest_placewood         295       1  0.794     0.47  
+open_1500.Socialityfac_social    294       1  2.259     0.05 *
+open_1500.SocialitySolitary      293       1  0.565     0.38  
+open_1500.ITfam                  292       1  2.930     0.24  
+open_1500.PDrar20                291       1  7.293     0.04 *
+open_1500.tongue                 290       1  0.171     0.82  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+Arguments: P-value calculated using 99 resampling iterations via PIT-trap block resampling (to account for correlation in testing).
+
