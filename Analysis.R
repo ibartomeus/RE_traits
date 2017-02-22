@@ -1,6 +1,5 @@
-#This script reproduce analysis done in Bartomeus et al. 2016 (submitted)
-#Pollinator species traits do not predict either response to agricultural 
-# intensification or functional contribution 
+#This script reproduce analysis done in Bartomeus et al. 2017 (submitted)
+#On the inconsistency of pollinator species traits for predicting either response to agricultural intensification or functional contribution. 
 #Ignasi Bartomeus, Daniel P. Cariveau, Tina Harrison, Rachael Winfree.
 
 #load data----
@@ -89,6 +88,177 @@ traits_cb <- traits_cb[,c(-1)]
 
 #gis range
 summary(gis_cb)
+
+#Response traits----
+#Alternative test of fourth corner analysis based in Brown et al and Wang et al papers.
+#This is the approach finally used in ms.
+
+#Adapt to wt
+# now fit the fourth corner model, only as a function of a few of traits and env variables:
+head(gis_wt)
+#select only variables for which we have strong predictions
+gis_wt <- gis_wt[,c(-3,-4,-7,-8)]
+
+#Option one:
+ftSmall=traitglm(R = gis_wt, L = spec_wt, Q = traits_wt[,c(-2,-8,-9,-10,-11)])
+ftSmall$fourth.corner
+ftSmallcoef <- ftSmall$coefficients
+anova(ftSmall, nBoot = 10) #make nBoot=1000 for accutare results
+summary(ftSmall) #slow!
+#get pseudo-R2 using observed vs predicted
+x <- predict.traitglm(object = ftSmall, newR=gis_wt)
+plot(unlist(spec_wt) ~ as.vector(x))
+summary(lm(unlist(spec_wt) ~ as.vector(x)))
+
+#p.uni
+a_wt <- anova(ftSmall, p.uni="adjusted") #make nBoot=1000 for accutare results  #SLOW! 2 h 17 min. gives all p-values.
+capture.output(a_wt, file = "data_/a_wt.txt")
+
+#Option 2: with LASSO penealty
+ft1=traitglm(R = gis_wt, L = spec_wt, Q = traits_wt[,c(-2,-8,-9,-10,-11)], method="glm1path")
+ft1$fourth.corner
+ft1coef <- ft1$coefficients
+#Check difference between two options
+plot(ftSmallcoef, ft1coef[-c(2,55:69,70,75,82,87,94,99,106,108)]) #the shrinkage works also in high coeffs, but presumably with high uncertainty too?
+#evaluation of the model
+#ft1=traitglm(R = gis_wt[,c(1,4)], L = spec_wt, Q = traits_wt[,c(4,5)], method="glm1path")
+x <- predict.traitglm(object = ft1)
+plot(unlist(spec_wt) ~ as.vector(x))
+summary(lm(unlist(spec_wt) ~ as.vector(x)))
+
+ft1$fourth #notice LASSO penalty has shrunk many interactions to zero
+coef(ft1)
+plot(ft1)
+
+#plot
+#Is neg.bin with log-link, so I need to back-transform.
+#Plot general response to ag1500 and low IT
+#the below plot uses unstandardized values, which I think is wrong.
+# resp_q1 <- function(traits_wt, ft1, x){ 
+#   exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
+#       + ft1$coefficients[which(names(ft1$coefficients) == "ag_300")]*x
+#       + ft1$coefficients[which(names(ft1$coefficients) == "ITfam")]*summary(traits_wt$ITfam)[2]
+#       + ft1$coefficients[which(names(ft1$coefficients) == "ag_300:ITfam")]*x*summary(traits_wt$ITfam)[2])
+# }
+# yq1 <- c()
+# for(x in seq(25,80,1)){
+#   yq1 <- c(yq1,resp_q1(traits_wt, ft1, x))
+# }
+# max(yq1)
+# plot(seq(0,max(yq1),length.out = 56) ~ seq(25,80,1), type = "n", las = 1)
+# lines(x = seq(25,80,1), y = yq1, col = "blue")
+# #Plot general response to ag1500 and high IT
+# resp_q3 <- function(traits_wt, ft1, x){ #UNITS??? standardized effect size?
+#   exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
+#       + ft1$coefficients[which(names(ft1$coefficients) == "ag_300")]*x
+#       + ft1$coefficients[which(names(ft1$coefficients) == "ITfam")]*summary(traits_wt$ITfam)[5]
+#       + ft1$coefficients[which(names(ft1$coefficients) == "ag_300:ITfam")]*x*summary(traits_wt$ITfam)[5])
+# }
+# yq3 <- c()
+# for(x in seq(25,80,1)){
+#   yq3 <- c(yq3,resp_q3(traits_wt, ft1, x))
+# }
+# max(yq3)
+# #plot(seq(0,12000,length.out = 56) ~ seq(25,80,1), type = "n", las = 1)
+# lines(x = seq(25,80,1), y = yq3, col = "red")
+
+#As there is standardization of variables, play with the standardized T values
+resp_q1 <- function(traits_wt, ft1, x){ #units are standardized effect sizes.
+  exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_300")]*x
+      + ft1$coefficients[which(names(ft1$coefficients) == "ITfam")]*0.25
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_300:ITfam")]*x*0.25)
+}
+yq1 <- c()
+for(x in seq(0,1,0.1)){
+  yq1 <- c(yq1,resp_q1(traits_wt, ft1, x))
+}
+max(yq1)
+resp_q3 <- function(traits_wt, ft1, x){ #UNITS??? standardized effect size?
+  exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_300")]*x
+      + ft1$coefficients[which(names(ft1$coefficients) == "ITfam")]*0.75
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_300:ITfam")]*x*0.75)
+}
+yq3 <- c()
+for(x in seq(0,1,0.1)){
+  yq3 <- c(yq3,resp_q3(traits_wt, ft1, x))
+}
+max(yq3)
+plot(seq(min(c(yq1, yq3)),max(c(yq3, yq1)),length.out = length(seq(0,1,0.1))) ~ seq(0,1,0.1),
+     type = "n", las = 1, xlab = "% Agriculture 300m", ylab = "standardized effect size", xaxt = "n")
+axis(side = 1, labels = seq(0,100, 10), at = seq(0,1,0.1))
+lines(x = seq(0,1,0.1), y = yq1, col = "blue")
+lines(x = seq(0,1,0.1), y = yq3, col = "red")
+
+#Because all predictors are standardised, you can interpret the size of coefficients as a measure
+#of importance. As interaction terms, the fourth coefficients each have an interpretation as the 
+#amount by which a unit (1 sd) change in the trait variable changes the slope of the relationship 
+#between abundance and a given environmental variable.
+
+#a        = max( abs(ft1$fourth.corner) )
+a        = max(0.5)
+colort   = colorRampPalette(c("blue","white","red")) 
+plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variables",
+                     ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
+                     scales = list( x= list(rot = 45)))
+print(plot.4th)
+
+
+#BB
+spec_bb <- droplevels(spec_bb)
+traits_bb <- droplevels(traits_bb)
+gis_bb <- gis_bb[,c(-3,-4,-7,-8)]
+gis_bb <- droplevels(gis_bb)
+
+ftSmall=traitglm(R = gis_bb, L = spec_bb, Q = traits_bb[,c(-2,-4,-8,-9,-10,-11)])
+anova(ftSmall, nBoot = 100) #make nBoot=1000 for accutare results 
+#env:trait (fourth corner)    251      64 130.2    0.164 #for 1000 nBoot
+a_bb <- anova(ftSmall, p.uni="adjusted") #make nBoot=1000 for accutare results  #SLOW! 2 h 17 min. gives all p-values.
+capture.output(a_bb, file = "data_/a_bb.txt")
+plot(ftSmall)
+
+ft1=traitglm(R = gis_bb, L = spec_bb, Q = traits_bb[,c(-2,-4, -8,-9,-10,-11)], method="glm1path")
+ft1$fourth #notice LASSO penalty has shrunk many interactions to zero
+ft1$coefficients
+plot(ft1)
+#predictive power
+x <- predict.traitglm(object = ft1)
+plot(unlist(spec_bb) ~ as.vector(x))
+summary(lm(unlist(spec_bb) ~ as.vector(x)))
+
+#a        = max( abs(ft1$fourth.corner) )
+a        = max(0.5)
+colort   = colorRampPalette(c("blue","white","red")) 
+plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variables",
+                     ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
+                     scales = list( x= list(rot = 45)))
+print(plot.4th)
+
+#CB
+gis_cb <- gis_cb[,c(-3,-4,-7,-8)]
+
+ftSmall=traitglm(R = gis_cb, L = spec_cb, Q = traits_cb[,c(-2,-8,-9,-10,-11)])
+anova(ftSmall, nBoot = 100) #make nBoot=1000 for accutare results
+a_cb <- anova(ftSmall, p.uni="adjusted") #make nBoot=1000 for accutare results  #SLOW! 2 h 17 min. gives all p-values.
+capture.output(a_cb, file = "data_/a_cb.txt")
+
+ft1=traitglm(R = gis_cb, L = spec_cb, Q = traits_cb[,c(-2,-8,-9,-10,-11)], method="glm1path")
+ft1$coefficients
+ft1$fourth #notice LASSO penalty has shrunk many interactions to zero
+plot(ft1)
+#predictive power
+x <- predict.traitglm(object = ft1)
+plot(unlist(spec_cb) ~ as.vector(x))
+summary(lm(unlist(spec_cb) ~ as.vector(x)))
+
+#a        = max( abs(ft1$fourth.corner) )
+a        = max(0.5)
+colort   = colorRampPalette(c("blue","white","red")) 
+plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variables",
+                     ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
+                     scales = list( x= list(rot = 45)))
+print(plot.4th)
 
 #fourth corner analysis----
 #this analysis is not used in the final paper as using mvabund is a better approach
@@ -249,140 +419,9 @@ plot(eff_bb3$pol_mean ~ eff_bb3$ITfam)
 abline(m)
 #plot(m)
 
-#mvabund----
-#Alternative test of fourth corner analysis based in Brown et al and Wang et al papers.
-#This is the approach finally used in ms.
-
-#Adapt to wt
-# now fit the fourth corner model, only as a function of a couple of traits and env variables:
-head(gis_wt)
-#select only variables for which we have strong predictions
-gis_wt <- gis_wt[,c(-3,-4,-7,-8)]
-ftSmall=traitglm(R = gis_wt, L = spec_wt, Q = traits_wt[,c(-2,-8,-9,-10,-11)])
-anova(ftSmall, nBoot = 10) #make nBoot=1000 for accutare results
-summary(ftSmall)
-library(MuMIn)
-#r.squaredGLMM(ftSmall)
-#pseude-R2 (1-res diev / null dev)
-#1-ftSmall$deviance/???
-#anther aproach observed vs predicted
-#data(antTraits)
-x <- predict.traitglm(object = ftSmall, newR=gis_wt)
-plot(unlist(spec_wt) ~ as.vector(x))
-summary(lm(unlist(spec_wt) ~ as.vector(x)))
-
-#p.uni
-a_wt <- anova(ftSmall, p.uni="adjusted") #make nBoot=1000 for accutare results  #SLOW! 2 h 17 min. gives all p-values.
-capture.output(a_wt, file = "data_/a_wt.txt")
-data.frame(sign(ftSmall$coefficients) * exp(ftSmall$coefficients),
-           sign(ftSmall$coefficients + ftSmall$stderr.coefficients) * exp(ftSmall$coefficients + ftSmall$stderr.coefficients),
-           sign(ftSmall$coefficients - ftSmall$stderr.coefficients) * exp(ftSmall$coefficients - ftSmall$stderr.coefficients))
-#ag_1500                             -0.7253607 -0.8209067 -0.6409354
-plot(seq(-100,0,1) ~ seq(0,100,1), type = "n")
-abline(coef = c(-0.3316299, -0.7253607))
-#abline(a = -1.103735727, b = -0.321086213) #raw
-#ag_1500.ITfam                       -0.3854733 -0.6510276 -0.2282386
-abline(coef = c(-0.3316299, -0.7253607-0.3854733))
-#alternatively with ag 300 and interaction with IT:
-exp(-0.026717846) #-0.97
-exp(-0.026717846+0.812977896) #2.19 if + #0.97 if *
-ftSmall$fourth.corner
-
-ft1=traitglm(R = gis_wt, L = spec_wt, Q = traits_wt[,c(-2,-8,-9,-10,-11)], method="glm1path")
-sign(ft1$coefficients) * exp(ft1$coefficients)
-#intercept -0.5619055
-#ag_1500  -0.9533038
-plot(seq(-200,0,2) ~ seq(0,100,1), type = "n")
-abline(coef = c(-0.5619055, -0.9533038))
-#ag_1500:ITfam  -0.9387049
-abline(coef = c(-0.5619055, -0.9533038-0.9387049))
-abline(coef = c(-0.5619055, -0.9533038+0.9387049))
-abline(v = 50)
-#evaluation of the model
-#for IT:Ag300
-head(gis_wt)
-head(traits_wt)
-ft1=traitglm(R = gis_wt[,c(1,4)], L = spec_wt, Q = traits_wt[,c(4,5)], method="glm1path")
-x <- predict.traitglm(object = ft1)
-plot(unlist(spec_wt) ~ as.vector(x))
-summary(lm(unlist(spec_wt) ~ as.vector(x)))
-
-
-ft1$fourth #notice LASSO penalty has shrunk many interactions to zero
-summary(ft1)
-coef(ft1)
-plot(ft1)
-#Because all predictors are standardised, you can interpret the size of coefficients as a measure
-#of importance. As interaction terms, the fourth coefficients each have an interpretation as the 
-#amount by which a unit (1 sd) change in the trait variable changes the slope of the relationship 
-#between abundance and a given environmental variable.
-
-#a        = max( abs(ft1$fourth.corner) )
-a        = max(0.5)
-colort   = colorRampPalette(c("blue","white","red")) 
-plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variables",
-                     ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
-                     scales = list( x= list(rot = 45)))
-print(plot.4th)
-
-
-#BB
-spec_bb <- droplevels(spec_bb)
-traits_bb <- droplevels(traits_bb)
-gis_bb <- gis_bb[,c(-3,-4,-7,-8)]
-gis_bb <- droplevels(gis_bb)
-
-ftSmall=traitglm(R = gis_bb, L = spec_bb, Q = traits_bb[,c(-2,-4,-8,-9,-10,-11)])
-anova(ftSmall, nBoot = 100) #make nBoot=1000 for accutare results 
-#env:trait (fourth corner)    251      64 130.2    0.164 #for 1000 nBoot
-a_bb <- anova(ftSmall, p.uni="adjusted") #make nBoot=1000 for accutare results  #SLOW! 2 h 17 min. gives all p-values.
-capture.output(a_bb, file = "data_/a_bb.txt")
-plot(ftSmall)
-
-ft1=traitglm(R = gis_bb, L = spec_bb, Q = traits_bb[,c(-2,-4, -8,-9,-10,-11)], method="glm1path")
-ft1$fourth #notice LASSO penalty has shrunk many interactions to zero
-ft1$coefficients
-plot(ft1)
-#predictive power
-x <- predict.traitglm(object = ft1)
-plot(unlist(spec_bb) ~ as.vector(x))
-summary(lm(unlist(spec_bb) ~ as.vector(x)))
-
-#a        = max( abs(ft1$fourth.corner) )
-a        = max(0.5)
-colort   = colorRampPalette(c("blue","white","red")) 
-plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variables",
-                     ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
-                     scales = list( x= list(rot = 45)))
-print(plot.4th)
-
-#CB
-gis_cb <- gis_cb[,c(-3,-4,-7,-8)]
-
-ftSmall=traitglm(R = gis_cb, L = spec_cb, Q = traits_cb[,c(-2,-8,-9,-10,-11)])
-anova(ftSmall, nBoot = 100) #make nBoot=1000 for accutare results
-a_cb <- anova(ftSmall, p.uni="adjusted") #make nBoot=1000 for accutare results  #SLOW! 2 h 17 min. gives all p-values.
-capture.output(a_cb, file = "data_/a_cb.txt")
-
-ft1=traitglm(R = gis_cb, L = spec_cb, Q = traits_cb[,c(-2,-8,-9,-10,-11)], method="glm1path")
-ft1$coefficients
-ft1$fourth #notice LASSO penalty has shrunk many interactions to zero
-anova(ft1, nBoot = 100) #make nBoot=1000 for accutare results
-plot(ft1)
-#predictive power
-x <- predict.traitglm(object = ft1)
-plot(unlist(spec_cb) ~ as.vector(x))
-summary(lm(unlist(spec_cb) ~ as.vector(x)))
-
-#a        = max( abs(ft1$fourth.corner) )
-a        = max(0.5)
-colort   = colorRampPalette(c("blue","white","red")) 
-plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variables",
-                     ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
-                     scales = list( x= list(rot = 45)))
-print(plot.4th)
 
 #Are species abundance responding to LUC?----
+#One of reviewers ask, so we check. (not in final paper)
 
 gis_wt2 <- gis_wt
 gis_wt2$abund <- rowSums(spec_wt)
