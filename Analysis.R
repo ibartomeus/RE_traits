@@ -132,64 +132,39 @@ plot(ft1)
 
 #plot
 #Is neg.bin with log-link, so I need to back-transform.
-#Plot general response to ag1500 and low IT
-#the below plot uses unstandardized values, which I think is wrong.
-# resp_q1 <- function(traits_wt, ft1, x){ 
-#   exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
-#       + ft1$coefficients[which(names(ft1$coefficients) == "ag_300")]*x
-#       + ft1$coefficients[which(names(ft1$coefficients) == "ITfam")]*summary(traits_wt$ITfam)[2]
-#       + ft1$coefficients[which(names(ft1$coefficients) == "ag_300:ITfam")]*x*summary(traits_wt$ITfam)[2])
-# }
-# yq1 <- c()
-# for(x in seq(25,80,1)){
-#   yq1 <- c(yq1,resp_q1(traits_wt, ft1, x))
-# }
-# max(yq1)
-# plot(seq(0,max(yq1),length.out = 56) ~ seq(25,80,1), type = "n", las = 1)
-# lines(x = seq(25,80,1), y = yq1, col = "blue")
-# #Plot general response to ag1500 and high IT
-# resp_q3 <- function(traits_wt, ft1, x){ #UNITS??? standardized effect size?
-#   exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
-#       + ft1$coefficients[which(names(ft1$coefficients) == "ag_300")]*x
-#       + ft1$coefficients[which(names(ft1$coefficients) == "ITfam")]*summary(traits_wt$ITfam)[5]
-#       + ft1$coefficients[which(names(ft1$coefficients) == "ag_300:ITfam")]*x*summary(traits_wt$ITfam)[5])
-# }
-# yq3 <- c()
-# for(x in seq(25,80,1)){
-#   yq3 <- c(yq3,resp_q3(traits_wt, ft1, x))
-# }
-# max(yq3)
-# #plot(seq(0,12000,length.out = 56) ~ seq(25,80,1), type = "n", las = 1)
-# lines(x = seq(25,80,1), y = yq3, col = "red")
-
-#As there is standardization of variables, play with the standardized T values
-resp_q1 <- function(traits_wt, ft1, x){ #units are standardized effect sizes.
+#As there is standardization of variables, I use standardized values
+luc <- scale(gis_wt$ag_300) 
+tr <- scale(traits_wt$ITfam) 
+resp_q1 <- function(tr, ft1, x){ #units are standardized effect sizes.
   exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
       + ft1$coefficients[which(names(ft1$coefficients) == "ag_300")]*x
-      + ft1$coefficients[which(names(ft1$coefficients) == "ITfam")]*0.25
-      + ft1$coefficients[which(names(ft1$coefficients) == "ag_300:ITfam")]*x*0.25)
+      + ft1$coefficients[which(names(ft1$coefficients) == "ITfam")]*quantile(tr)[2]
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_300:ITfam")]*x*quantile(tr)[2])
 }
 yq1 <- c()
-for(x in seq(0,1,0.1)){
-  yq1 <- c(yq1,resp_q1(traits_wt, ft1, x))
+for(x in c(luc)){
+  yq1 <- c(yq1,resp_q1(tr, ft1, x))
 }
 max(yq1)
-resp_q3 <- function(traits_wt, ft1, x){ #UNITS??? standardized effect size?
+resp_q3 <- function(tr, ft1, x){ #standardized effect size
   exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
       + ft1$coefficients[which(names(ft1$coefficients) == "ag_300")]*x
-      + ft1$coefficients[which(names(ft1$coefficients) == "ITfam")]*0.75
-      + ft1$coefficients[which(names(ft1$coefficients) == "ag_300:ITfam")]*x*0.75)
+      + ft1$coefficients[which(names(ft1$coefficients) == "ITfam")]*quantile(tr)[4]
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_300:ITfam")]*x*quantile(tr)[4])
 }
 yq3 <- c()
-for(x in seq(0,1,0.1)){
-  yq3 <- c(yq3,resp_q3(traits_wt, ft1, x))
+for(x in c(luc)){
+  yq3 <- c(yq3,resp_q3(tr, ft1, x))
 }
 max(yq3)
-plot(seq(min(c(yq1, yq3)),max(c(yq3, yq1)),length.out = length(seq(0,1,0.1))) ~ seq(0,1,0.1),
+plot(seq(min(c(yq1, yq3)),max(c(yq3, yq1)),length.out = length(luc)) ~ c(luc),
      type = "n", las = 1, xlab = "% Agriculture 300m", ylab = "standardized effect size", xaxt = "n")
-axis(side = 1, labels = seq(0,100, 10), at = seq(0,1,0.1))
-lines(x = seq(0,1,0.1), y = yq1, col = "blue")
-lines(x = seq(0,1,0.1), y = yq3, col = "red")
+axis(side = 1, labels = round(seq(min(gis_wt$ag_300), max(gis_wt$ag_300), length.out = 10)),
+     at = seq(min(luc), max(luc), length.out = 10))
+temp <- data.frame(luc, yq1)[order(luc),]
+lines(x = temp$luc, y = temp$yq1, col = "blue")
+temp <- data.frame(luc, yq3)[order(luc),]
+lines(x = c(luc), y = yq3, col = "red")
 
 #Because all predictors are standardised, you can interpret the size of coefficients as a measure
 #of importance. As interaction terms, the fourth coefficients each have an interpretation as the 
