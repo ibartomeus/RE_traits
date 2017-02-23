@@ -166,6 +166,41 @@ lines(x = temp$luc, y = temp$yq1, col = "blue")
 temp <- data.frame(luc, yq3)[order(luc),]
 lines(x = c(luc), y = yq3, col = "red")
 
+#plot another interaction
+luc <- scale(gis_wt$ag_1500) 
+tr <- scale(traits_wt$ITfam) 
+resp_q1 <- function(tr, ft1, x){ #units are standardized effect sizes.
+  exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_1500")]*x
+      + ft1$coefficients[which(names(ft1$coefficients) == "ITfam")]*quantile(tr)[2]
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_1500:ITfam")]*x*quantile(tr)[2])
+}
+yq1 <- c()
+for(x in c(luc)){
+  yq1 <- c(yq1,resp_q1(tr, ft1, x))
+}
+max(yq1)
+resp_q3 <- function(tr, ft1, x){ #standardized effect size
+  exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_1500")]*x
+      + ft1$coefficients[which(names(ft1$coefficients) == "ITfam")]*quantile(tr)[4]
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_1500:ITfam")]*x*quantile(tr)[4])
+}
+yq3 <- c()
+for(x in c(luc)){
+  yq3 <- c(yq3,resp_q3(tr, ft1, x))
+}
+max(yq3)
+plot(seq(min(c(yq1, yq3)),max(c(yq3, yq1)),length.out = length(luc)) ~ c(luc),
+     type = "n", las = 1, xlab = "% Agriculture 1500m", ylab = "standardized effect size", xaxt = "n")
+axis(side = 1, labels = round(seq(min(gis_wt$ag_1500), max(gis_wt$ag_1500), length.out = 10)),
+     at = seq(min(luc), max(luc), length.out = 10))
+temp <- data.frame(luc, yq1)[order(luc),]
+lines(x = temp$luc, y = temp$yq1, col = "blue")
+temp <- data.frame(luc, yq3)[order(luc),]
+lines(x = c(luc), y = yq3, col = "red")
+
+
 #Because all predictors are standardised, you can interpret the size of coefficients as a measure
 #of importance. As interaction terms, the fourth coefficients each have an interpretation as the 
 #amount by which a unit (1 sd) change in the trait variable changes the slope of the relationship 
