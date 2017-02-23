@@ -126,6 +126,9 @@ x <- predict.traitglm(object = ft1)
 plot(unlist(spec_wt) ~ as.vector(x))
 summary(lm(unlist(spec_wt) ~ as.vector(x)))
 
+results_wt <- data.frame(crop = "wt", variable = names(ft1$coefficients), estimates = as.numeric(ft1$coefficients))
+head(results_wt)
+
 ft1$fourth #notice LASSO penalty has shrunk many interactions to zero
 coef(ft1)
 plot(ft1)
@@ -164,7 +167,7 @@ axis(side = 1, labels = round(seq(min(gis_wt$ag_300), max(gis_wt$ag_300), length
 temp <- data.frame(luc, yq1)[order(luc),]
 lines(x = temp$luc, y = temp$yq1, col = "blue")
 temp <- data.frame(luc, yq3)[order(luc),]
-lines(x = c(luc), y = yq3, col = "red")
+lines(x = temp$luc, y = temp$yq3, col = "red")
 
 #plot another interaction
 luc <- scale(gis_wt$ag_1500) 
@@ -232,6 +235,10 @@ ft1=traitglm(R = gis_bb, L = spec_bb, Q = traits_bb[,c(-2,-4, -8,-9,-10,-11)], m
 ft1$fourth #notice LASSO penalty has shrunk many interactions to zero
 ft1$coefficients
 plot(ft1)
+
+results_bb <- data.frame(crop = "bb", variable = names(ft1$coefficients), estimates = as.numeric(ft1$coefficients))
+head(results_bb)
+
 #predictive power
 x <- predict.traitglm(object = ft1)
 plot(unlist(spec_bb) ~ as.vector(x))
@@ -244,6 +251,41 @@ plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variab
                      ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
                      scales = list( x= list(rot = 45)))
 print(plot.4th)
+
+#As there is standardization of variables, I use standardized values
+luc <- scale(gis_bb$ag_1500) 
+tr <- scale(traits_bb$tongue) 
+resp_q1 <- function(tr, ft1, x){ #units are standardized effect sizes.
+  exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_1500")]*x
+      + ft1$coefficients[which(names(ft1$coefficients) == "tongue")]*quantile(tr)[2]
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_1500:tongue")]*x*quantile(tr)[2])
+}
+yq1 <- c()
+for(x in c(luc)){
+  yq1 <- c(yq1,resp_q1(tr, ft1, x))
+}
+max(yq1)
+resp_q3 <- function(tr, ft1, x){ #standardized effect size
+  exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_1500")]*x
+      + ft1$coefficients[which(names(ft1$coefficients) == "tongue")]*quantile(tr)[4]
+      + ft1$coefficients[which(names(ft1$coefficients) == "ag_1500:tongue")]*x*quantile(tr)[4])
+}
+yq3 <- c()
+for(x in c(luc)){
+  yq3 <- c(yq3,resp_q3(tr, ft1, x))
+}
+max(yq3)
+plot(seq(min(c(yq1, yq3)),max(c(yq3, yq1)),length.out = length(luc)) ~ c(luc),
+     type = "n", las = 1, xlab = "% Agriculture 1500m", ylab = "standardized effect size", xaxt = "n")
+axis(side = 1, labels = round(seq(min(gis_wt$ag_1500), max(gis_wt$ag_1500), length.out = 10)),
+     at = seq(min(luc), max(luc), length.out = 10))
+temp <- data.frame(luc, yq1)[order(luc),]
+lines(x = temp$luc, y = temp$yq1, col = "blue")
+temp <- data.frame(luc, yq3)[order(luc),]
+lines(x = temp$luc, y = temp$yq3, col = "red")
+
 
 #CB
 gis_cb <- gis_cb[,c(-3,-4,-7,-8)]
@@ -262,6 +304,10 @@ x <- predict.traitglm(object = ft1)
 plot(unlist(spec_cb) ~ as.vector(x))
 summary(lm(unlist(spec_cb) ~ as.vector(x)))
 
+results_cb <- data.frame(crop = "cb", variable = names(ft1$coefficients), estimates = as.numeric(ft1$coefficients))
+head(results_cb)
+
+
 #a        = max( abs(ft1$fourth.corner) )
 a        = max(0.5)
 colort   = colorRampPalette(c("blue","white","red")) 
@@ -269,6 +315,45 @@ plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variab
                      ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
                      scales = list( x= list(rot = 45)))
 print(plot.4th)
+
+#plot interaction
+luc <- scale(gis_cb$open_300) 
+tr <- scale(traits_cb$PDrar20) 
+resp_q1 <- function(tr, ft1, x){ #units are standardized effect sizes.
+  exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
+      + ft1$coefficients[which(names(ft1$coefficients) == "open_300")]*x
+      + ft1$coefficients[which(names(ft1$coefficients) == "PDrar20")]*quantile(tr)[2]
+      + ft1$coefficients[which(names(ft1$coefficients) == "open_300:PDrar20")]*x*quantile(tr)[2])
+}
+yq1 <- c()
+for(x in c(luc)){
+  yq1 <- c(yq1,resp_q1(tr, ft1, x))
+}
+max(yq1)
+resp_q3 <- function(tr, ft1, x){ #standardized effect size
+  exp(ft1$coefficients[which(names(ft1$coefficients) == "")] 
+      + ft1$coefficients[which(names(ft1$coefficients) == "open_300")]*x
+      + ft1$coefficients[which(names(ft1$coefficients) == "PDrar20")]*quantile(tr)[4]
+      + ft1$coefficients[which(names(ft1$coefficients) == "open_300:PDrar20")]*x*quantile(tr)[4])
+}
+yq3 <- c()
+for(x in c(luc)){
+  yq3 <- c(yq3,resp_q3(tr, ft1, x))
+}
+max(yq3)
+plot(seq(min(c(yq1, yq3)),max(c(yq3, yq1)),length.out = length(luc)) ~ c(luc),
+     type = "n", las = 1, xlab = "% semi-natural 300m", ylab = "standardized effect size", xaxt = "n")
+axis(side = 1, labels = round(seq(min(gis_wt$ag_1500), max(gis_wt$ag_1500), length.out = 10)),
+     at = seq(min(luc), max(luc), length.out = 10))
+temp <- data.frame(luc, yq1)[order(luc),]
+lines(x = temp$luc, y = temp$yq1, col = "blue")
+temp <- data.frame(luc, yq3)[order(luc),]
+lines(x = c(luc), y = yq3, col = "red")
+
+#unify results
+results <- rbind(results_wt, results_bb, results_cb)
+write.csv(results, file = "data_/coefs.csv")
+
 
 #fourth corner analysis----
 #this analysis is not used in the final paper as using mvabund is a better approach
