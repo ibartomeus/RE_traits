@@ -165,9 +165,9 @@ plot(seq(min(c(yq1, yq3)),max(c(yq3, yq1)),length.out = length(luc)) ~ c(luc),
 axis(side = 1, labels = round(seq(min(gis_wt$ag_300), max(gis_wt$ag_300), length.out = 10)),
      at = seq(min(luc), max(luc), length.out = 10))
 temp <- data.frame(luc, yq1)[order(luc),]
-lines(x = temp$luc, y = temp$yq1, col = "blue")
+lines(x = temp$luc, y = temp$yq1, lty = 1)
 temp <- data.frame(luc, yq3)[order(luc),]
-lines(x = temp$luc, y = temp$yq3, col = "red")
+lines(x = temp$luc, y = temp$yq3, lty = 2)
 
 #plot another interaction
 luc <- scale(gis_wt$ag_1500) 
@@ -282,9 +282,9 @@ plot(seq(min(c(yq1, yq3)),max(c(yq3, yq1)),length.out = length(luc)) ~ c(luc),
 axis(side = 1, labels = round(seq(min(gis_wt$ag_1500), max(gis_wt$ag_1500), length.out = 10)),
      at = seq(min(luc), max(luc), length.out = 10))
 temp <- data.frame(luc, yq1)[order(luc),]
-lines(x = temp$luc, y = temp$yq1, col = "blue")
+lines(x = temp$luc, y = temp$yq1, lty = 1)
 temp <- data.frame(luc, yq3)[order(luc),]
-lines(x = temp$luc, y = temp$yq3, col = "red")
+lines(x = temp$luc, y = temp$yq3, lty = 1)
 
 
 #CB
