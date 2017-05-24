@@ -8,6 +8,28 @@ net <- read.csv("data_/specimens.csv")
 traits <- read.csv("data_/traits.csv")
 gis <- read.csv("data_/gis.csv")
 
+summary(net)
+table(net$Crop)
+x <- table(net$Crop , net$Gen_sp)
+x[x>0] <- 1
+rowSums(x)
+# Add oligolecty
+
+more_traits <- read.csv("data_/oligo.csv")
+head(more_traits)
+head(traits)
+
+traits2 <- merge(traits, more_traits, all.x = TRUE)
+traits2 <- traits2[-27,]
+str(traits)
+str(traits2)
+traits2[which(is.na(traits2$Lecticity)),13] <- "Polylectic"
+traits2[which(traits2$PDrar20 < 500),]
+traits2[which(traits2$Gen_sp == "Colletes_validus"),13] <- "Oligolectic" #According to DL probably specialists on vaccinium
+traits2[which(traits2$PDrar20 > 1000 & traits2$Lecticity == "Oligolectic"),] #According to DL:  Azalea, Rhodora and Vaccinium. Recorded by Brittain and Newton (1934) on Claytonia, Dentaria, Ledum, Pyrus malus and Pyrus spp.
+traits2[which(traits2$Gen_sp == "Andrena_carolina"),13] <- "Polylectic"
+plot(traits2$PDrar20 ~ traits2$Lecticity, xlab = "dietary generalism", ylab = "dietary specialization", las = 1)
+
 
 #load libraries----
 
@@ -17,6 +39,7 @@ library(FD)
 library(MuMIn)
 library(mvabund)
 library(lattice)
+library(car)
 
 #perpare data for each crop----
 
@@ -166,6 +189,11 @@ axis(side = 1, labels = round(seq(min(gis_wt$ag_300), max(gis_wt$ag_300), length
      at = seq(min(luc), max(luc), length.out = 10))
 temp <- data.frame(luc, yq1)[order(luc),]
 lines(x = temp$luc, y = temp$yq1, lty = 1)
+#points
+str(ft1)
+points(luc, rowSums(spec_wt)/max(rowSums(spec_wt)))
+ft1$glm1.best$fitted.values
+
 temp <- data.frame(luc, yq3)[order(luc),]
 lines(x = temp$luc, y = temp$yq3, lty = 2)
 
@@ -402,6 +430,9 @@ subset(out, delta <2)
 importance(out)
 model.avg(out, subset= delta < 2, revised.var = TRUE) 
 
+m <- lm(visitation_wt ~ ITfam + tongue, data = traits_wt, na.action = na.fail)
+summary(m)
+vif(m) 
 m <- lm(visitation_wt ~ tongue, data = traits_wt, na.action = na.fail)
 summary(m)
 #plot(m)
@@ -420,6 +451,7 @@ model.avg(out, subset= delta < 2, revised.var = TRUE)
 #best is nest only
 m <- lm(visitation_cb ~ Sociality + tongue, data = traits_cb, na.action = na.fail)
 summary(m)
+vif(m)
 m <- lm(visitation_cb ~ Nest_place, data = traits_cb, na.action = na.fail)
 summary(m)
 anova(m)
@@ -458,9 +490,12 @@ importance(out)
 
 #best is ITfam & tongue sig only
 m <- lm(pol_mean ~ ITfam + tongue, data = eff_wt3, na.action = na.fail)
+AIC(m)
 summary(m)
+vif(m)
 m <- lm(pol_mean ~ ITfam, data = eff_wt3, na.action = na.fail)
 summary(m)
+AIC(m)
 #without bombus
 #eff_wt4 <- eff_wt3[-1,]
 #m <- lm(pol_mean ~ ITfam, data = eff_wt4, na.action = na.fail)
@@ -503,6 +538,7 @@ importance(out)
 
 m <- lm(pol_mean ~ ITfam + PDrar20 + tongue, data = eff_bb3, na.action = na.fail)
 summary(m)
+vif(m)
 #but watch out:
 cor(eff_bb3$ITfam, eff_bb3$tongue)
 m <- lm(pol_mean ~ tongue, data = eff_bb3, na.action = na.fail)
@@ -563,3 +599,181 @@ m <- lm(abund ~ open_300, data = gis_cb)
 summary(m) 
 m <- lm(abund ~ open_1500, data = gis_cb)
 summary(m) #0.06
+
+#Sup Mat----
+
+#Correlation among traits:----
+head(traits)
+pairs(traits[,2:8])
+pannel.cor <- function(x, y, digits=2, prefix="", cex.cor = 0.55, ...){
+  #panels in pairs will show correlation
+  #Args: 
+  #Result: a multiplot with 
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- abs(cor(x, y))
+  txt <- format(c(r, 0.123456789), digits=digits)[1]
+  txt <- paste(prefix, txt, sep="")
+  if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+  test <- cor.test(x,y) 
+  # borrowed from printCoefmat
+  #Signif <- symnum(test$p.value, corr = FALSE, na = FALSE, 
+                  # cutpoints = c(0, 0.001, 0.01, 0.05, 0.1, 1),
+                  # symbols = c("***", "**", "*", ".", " ")) 
+  #text(0.5, 0.5, txt, cex = cex.cor* 1 * r)
+  text(0.5, 0.5, txt)
+  #text(.8, .9, Signif, cex=cex.cor * 0.6, col=1) 
+}
+
+pairs(traits[,c(2,4:8)], upper.panel=pannel.cor, diag.panel = panel.hist)
+
+# Analysis with Forest edges:-----
+#do not run the other analysis first or gis data would not work
+head(gis_wt)
+#select only variables for which we have strong predictions
+gis_wt_forest <- gis_wt[,c(3,7)]
+
+#Option 2: with LASSO penealty
+ft1=traitglm(R = gis_wt_forest, L = spec_wt, Q = traits_wt[,c(-2,-8,-9,-10,-11)], method="glm1path")
+ft1$fourth.corner
+ft1coef <- ft1$coefficients
+coef(ft1)
+plot(ft1)
+#Plot
+a        = max(0.5)
+colort   = colorRampPalette(c("blue","white","red")) 
+plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variables",
+                     ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
+                     scales = list( x= list(rot = 45)))
+print(plot.4th)
+
+#bb
+spec_bb <- droplevels(spec_bb)
+traits_bb <- droplevels(traits_bb)
+gis_bb_forest <- gis_bb[,c(3,7)]
+
+ft1=traitglm(R = gis_bb_forest, L = spec_bb, Q = traits_bb[,c(-2,-4, -8,-9,-10,-11)], method="glm1path")
+ft1$fourth #notice LASSO penalty has shrunk many interactions to zero
+ft1$coefficients
+plot(ft1)
+#Plot
+a        = max(0.5)
+colort   = colorRampPalette(c("blue","white","red")) 
+plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variables",
+                     ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
+                     scales = list( x= list(rot = 45)))
+print(plot.4th)
+
+#cb
+gis_cb_forest <- gis_cb[,c(3,7)]
+
+ft1=traitglm(R = gis_cb_forest, L = spec_cb, Q = traits_cb[,c(-2, -8,-9,-10,-11)], method="glm1path")
+ft1$fourth #notice LASSO penalty has shrunk many interactions to zero
+ft1$coefficients
+plot(ft1)
+#Plot
+a        = max(0.5)
+colort   = colorRampPalette(c("blue","white","red")) 
+plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variables",
+                     ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
+                     scales = list( x= list(rot = 45)))
+print(plot.4th)
+
+# Anlaysis with Oligolecty:----
+
+head(gis_wt)
+#select only variables for which we have strong predictions
+gis_wt <- gis_wt[,c(-3,-4,-7,-8)]
+traits_wt2 <- subset(traits2, Gen_sp %in% colnames(spec_wt))
+rownames(traits_wt2) <- traits_wt2$Gen_sp
+traits_wt2 <- traits_wt2[,c(-1)]
+
+#Option 2: with LASSO penealty
+head(traits_wt2)
+ft1=traitglm(R = gis_wt, L = spec_wt, Q = traits_wt2[,c(-2,-6,-8,-9,-10,-11)], method="glm1path")
+ft1$fourth.corner
+ft1coef <- ft1$coefficients
+coef(ft1)
+plot(ft1)
+#Plot
+a        = max(0.5)
+colort   = colorRampPalette(c("blue","white","red")) 
+plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variables",
+                     ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
+                     scales = list( x= list(rot = 45)))
+print(plot.4th)
+
+#bb
+gis_bb <- gis_bb[,c(-3,-4,-7,-8)]
+traits_bb2 <- subset(traits2, Gen_sp %in% colnames(spec_bb))
+rownames(traits_bb2) <- traits_bb2$Gen_sp
+traits_bb2 <- traits_bb2[,c(-1)]
+traits_bb2 <- droplevels(traits_bb2)
+
+head(traits_bb2)
+ft1=traitglm(R = gis_bb, L = spec_bb, Q = traits_bb2[,c(-2,-4, -6, -8,-9,-10,-11)], method="glm1path")
+ft1$fourth #notice LASSO penalty has shrunk many interactions to zero
+ft1$coefficients
+plot(ft1)
+#Plot
+a        = max(0.5)
+colort   = colorRampPalette(c("blue","white","red")) 
+plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variables",
+                     ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
+                     scales = list( x= list(rot = 45)))
+print(plot.4th)
+
+#cb
+gis_cb <- gis_cb[,c(-3,-4,-7,-8)]
+traits_cb2 <- subset(traits2, Gen_sp %in% colnames(spec_cb))
+rownames(traits_cb2) <- traits_cb2$Gen_sp
+traits_cb2 <- traits_cb2[,c(-1)]
+
+ft1=traitglm(R = gis_cb, L = spec_cb, Q = traits_cb2[,c(-2,-6, -8,-9,-10,-11)], method="glm1path")
+ft1$fourth #notice LASSO penalty has shrunk many interactions to zero
+ft1$coefficients
+plot(ft1)
+#Plot
+a        = max(0.5)
+colort   = colorRampPalette(c("blue","white","red")) 
+plot.4th = levelplot(t(as.matrix(ft1$fourth.corner)), xlab="Environmental Variables",
+                     ylab="Species traits", col.regions=colort(100), at=seq(-a, a, length=100),
+                     scales = list( x= list(rot = 45)))
+print(plot.4th)
+
+
+#and now efficiecny.
+
+m <- lm(visitation_wt ~ Lecticity, data = traits_wt2, na.action = na.fail)
+summary(m)
+m <- lm(visitation_bb ~ Lecticity, data = traits_bb2, na.action = na.fail)
+summary(m)
+plot(traits_bb2$visitation_bb ~ traits_bb2$Lecticity, xlab = "diet breath", ylab = "Visitation rate", las = 2)
+m <- lm(visitation_cb ~ Lecticity, data = traits_cb2, na.action = na.fail)
+summary(m)
+
+traits_wt2$Gen_sp <- rownames(traits_wt2)
+str(traits_wt2)
+eff_wt4 <- merge(eff_wt3, traits_wt2[,c(13,12)], all.x = TRUE, by = "Gen_sp")
+m <- lm(pol_mean ~ Lecticity, data = eff_wt4, na.action = na.fail)
+summary(m)
+
+traits_bb2$Gen_sp <- rownames(traits_bb2)
+str(traits_bb2)
+eff_bb4 <- merge(eff_bb3, traits_bb2[,c(13,12)], all.x = TRUE, by = "Gen_sp")
+m <- lm(pol_mean ~ Lecticity, data = eff_bb4, na.action = na.fail)
+summary(m)
+
+traits_cb2$Gen_sp <- rownames(traits_cb2)
+str(traits_cb2)
+eff_cb4 <- merge(eff_cb3, traits_cb2[,c(13,12)], all.x = TRUE, by = "Gen_sp")
+m <- lm(pol_mean ~ Lecticity, data = eff_cb4, na.action = na.fail)
+#Fail, all polilectic?!
+
+
+#check correlation LUC
+cor(gis[3:10])
+pairs(gis[c(3,4,5,7,8,9)], upper.panel=pannel.cor, diag.panel = panel.hist)
+pairs(gis[c(3,4,7,8)], upper.panel=pannel.cor, diag.panel = panel.hist)
+
+
